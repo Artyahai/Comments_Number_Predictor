@@ -28,23 +28,32 @@ class Create_Dataset(): # Creating class that hepls to collect data
         self.length_of_data = length_of_data
     def save_to_db(self):
         like_count, reply_count, comments_count = _get_data(self.link)
-        
+        _insert_to_psql(self.link, like_count, comments_count)
+    
+    def _insert_to_psql(link,like_count, reply_count, comments_count):
+        conn = psycopg2.connect(host='localhost', port=5432, database="dataset", user='postgres', password='postgres')
+        cur = conn.cursor()
+        cur.execute(""" INSERT INTO Xinfo (link, likes, replycount, commentcount) VALUES (%s, %i, %i, %i)""",
+                    (link, like_count,reply_count, comments_count))
+        conn.commit()
+        cur.close()
+        conn.close()
 
     def _get_data(link):
-        with sync_playwright() as p:
-            browser = p.firefox.launch()
-            page = browser.new_page()
-            if link.startswith('https://x.com/', 'http://x.com/'): 
-                page.goto(link)
-                page.wait_for_selector("[data-testid='like']")
-                page.wait_for_selector("[data-testid='reply']")
-                page.wait_for_selector("[data-testid='retweet']")
-                like_count = page.inner_text("[data-testid='like']")
-                reply_count = page.inner_text("[data-testid='reply']")
-                comments_count = page.inner_text("[data-testid='retweet']")
-                return like_count, comments_count, reply_count
-            else:
-                raise ValueError("Wrong type of link")
+            with sync_playwright() as p:
+               browser = p.firefox.launch()
+               page = browser.new_page()
+               if link.startswith('https://x.com/', 'http://x.com/'): 
+                   page.goto(link)
+                   page.wait_for_selector("[data-testid='like']")
+                   page.wait_for_selector("[data-testid='reply']")
+                   page.wait_for_selector("[data-testid='retweet']")
+                   like_count = page.inner_text("[data-testid='like']")
+                   reply_count = page.inner_text("[data-testid='reply']")
+                   comments_count = page.inner_text("[data-testid='retweet']")
+                   return like_count, comments_count, reply_count
+               else:
+                   raise ValueError("Wrong type of link")
             
             
             
