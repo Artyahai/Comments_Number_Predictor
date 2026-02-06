@@ -8,7 +8,7 @@ class Create_Dataset(): # Creating class that hepls to collect data
         self.length_of_data = length_of_data
     def save_to_db(self):
         like_count, retweet_count, comments_count = self._get_data(self.link)
-        self._insert_to_psql(self.link, self.topic)
+        self._insert_to_psql(self.link, self.topic, like_count, retweet_count, comments_count)
     
     def _insert_to_psql(self,link,topic,like_count, reposts_count, comments_count):
         
@@ -25,7 +25,7 @@ class Create_Dataset(): # Creating class that hepls to collect data
             with sync_playwright() as p:
                browser = p.firefox.launch()
                page = browser.new_page()
-               if link.startswith('https://x.com/', 'http://x.com/'): 
+               if link.startswith(('https://x.com/', 'http://x.com/')): 
                    page.goto(link)
                    page.wait_for_selector("[data-testid='like']")
                    page.wait_for_selector("[data-testid='reply']")
@@ -37,3 +37,9 @@ class Create_Dataset(): # Creating class that hepls to collect data
                else:
                    raise ValueError("Wrong type of link")
 
+dataset = Create_Dataset(
+    link = "https://x.com/BBCSport/status/2019674930774958543",
+    topic=1,
+    length_of_data = 1
+)
+dataset.save_to_db()
