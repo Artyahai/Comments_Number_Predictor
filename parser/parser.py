@@ -1,25 +1,5 @@
-from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
-import asyncio
 import psycopg2 
-
-conn = psycopg2.connect("")
-async def main():
-    async with async_playwright() as p:
-        browser = await p.firefox.launch()
-        page = await browser.new_page()
-        await page.goto("https://x.com/BBCWorld/status/2019429088679628925")
-        await page.wait_for_selector("[data-testid='like']")
-        await page.wait_for_selector("[data-testid='reply']")
-        likes = await page.inner_text("[data-testid=like]")
-        replies = await page.inner_text("[data-testid=reply]")
-        print(f"Replies: {replies} \n Likes: {likes}")
-        await page.screenshot(path="experiments/whh.png")
-        await page.title( )
-        await browser.close()
-
-
-asyncio.run(main())              
 
 class Create_Dataset(): # Creating class that hepls to collect data
     def __init__(self, link, topic, length_of_data):
@@ -27,19 +7,21 @@ class Create_Dataset(): # Creating class that hepls to collect data
         self.topic = topic
         self.length_of_data = length_of_data
     def save_to_db(self):
-        like_count, reply_count, comments_count = _get_data(self.link)
-        _insert_to_psql(self.link, like_count, comments_count)
+        like_count, retweet_count, comments_count = self._get_data(self.link)
+        self._insert_to_psql(self.link, self.topic)
     
-    def _insert_to_psql(link,like_count, reply_count, comments_count):
+    def _insert_to_psql(self,link,topic,like_count, reposts_count, comments_count):
+        
         conn = psycopg2.connect(host='localhost', port=5432, database="dataset", user='postgres', password='postgres')
         cur = conn.cursor()
-        cur.execute(""" INSERT INTO Xinfo (link, likes, replycount, commentcount) VALUES (%s, %i, %i, %i)""",
-                    (link, like_count,reply_count, comments_count))
+        for n in range(self.length_of_data):
+            cur.execute(""" INSERT INTO Xinfo (link,topic, likes, repostscount, commentcount) VALUES (%s,%s, %s, %s, %s)""",
+                        (link,topic, like_count,reposts_count, comments_count))
         conn.commit()
         cur.close()
         conn.close()
 
-    def _get_data(link):
+    def _get_data(self,link):
             with sync_playwright() as p:
                browser = p.firefox.launch()
                page = browser.new_page()
@@ -50,14 +32,8 @@ class Create_Dataset(): # Creating class that hepls to collect data
                    page.wait_for_selector("[data-testid='retweet']")
                    like_count = page.inner_text("[data-testid='like']")
                    reply_count = page.inner_text("[data-testid='reply']")
-                   comments_count = page.inner_text("[data-testid='retweet']")
-                   return like_count, comments_count, reply_count
+                   retweet_count = page.inner_text("[data-testid='retweet']")
+                   return like_count, retweet_count, reply_count
                else:
                    raise ValueError("Wrong type of link")
-            
-            
-            
-            
 
-
-        
